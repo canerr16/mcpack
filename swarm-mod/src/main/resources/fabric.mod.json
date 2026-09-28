@@ -10,6 +10,9 @@
   "entrypoints": {
     "client": ["com.swarm.SwarmMod"]
   },
+  "mixins": [
+    "swarm_mod.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21",

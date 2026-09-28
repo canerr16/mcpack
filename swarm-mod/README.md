@@ -50,10 +50,31 @@ cd swarm-mod
 ## Anti-cheat (Grim) yaklaşımı
 
 Kullanıcı teyidi: "çok hızlı + uzak reach + air-place olmadıkça sorun yok."
-- `AntiCheatTuning`: Baritone `antiCheatCompatibility`, `freeLook`, `smoothLook`,
-  reach sınırı (`blockReachDistance`), yerleştirme cezası, katmanlı inşa.
-- **Sneak-place**: worker inşa halindeyken SNEAK basılı tutulur → huni/smoker
-  koyarken GUI açılmaz (Grim'in ilgisini çekmez, blok doğru yön alır).
+
+**Bakma / dönme bug'larına karşı** (`AntiCheatTuning`):
+- `antiCheatCompatibility=true` — rotasyonları sunucuyla tutarlı gönderir; Grim'de
+  "client baktı sandı, server aynı fikirde değil" desync'ini (= havaya bakma /
+  yetişemediği yere koymaya çalışma) önleyen asıl ayar.
+- `freeLook=true` — vücut sabit, sadece kafa hedefe döner → **360 dönme yok**.
+- `smoothLook=true` — kademeli, insani kafa hareketi.
+- `randomLooking=false` — hedefi ıskalayıp havayı yumruklamayı önler.
+
+**Havayı yumruklama / takılmaya karşı**:
+- `allowBreak=false` — worker **sadece blok koyar, hiç kırmaz** → yanlış/boş bloğa
+  vurma tamamen elenir. (İnşa alanı boş olmalı.)
+- `WorkerController.watchdog` — ilerleme durur ve Baritone da boştaysa inşayı
+  otomatik yeniden tetikler (öylece takılıp kalmayı kırar).
+
+**Reach / hız**:
+- `blockReachDistance=4.5` (vanilla) — aşmıyor; `blockPlacementPenalty` ile
+  seri hızlı koyma kırılıp insani ritim veriliyor.
+
+**Sneak-place (huni/smoker GUI'si açılmasın)** — `SneakPlaceMixin`:
+- Huni yönü **tıklanan blok yüzeyiyle** belirlenir, bakış yönüyle değil; shift'in
+  tek işi konteynere tıklarken GUI açılmasını engellemek.
+- Mixin, worker inşa halindeyken `shouldCancelInteraction()`'ı `true` döndürür →
+  GUI açılmaz **ama karakter fiilen ÇÖMELMEZ** (sneak tuşuna basılmaz). Böylece
+  hareket yavaşlamaz, kenardan düşme/takılma artmaz. Grim için ideal.
 - Air-place kapalı; her blok komşu yüzeye dayanır.
 
 ## ⚠️ Oyun-içi doğrulanacak dikişler (Modül 3 test)
@@ -72,3 +93,5 @@ Aşağıdakiler pinlenen sürümlerle **oyunda** doğrulanmalı:
    Litematica'nın "eksik blok" sayısıyla değiştirilebilir.
 5. **socket.io include/shadow**: jar içine gömülme (Fabric classpath) test edilmeli;
    gerekirse `shadow`/`jarJar` ile relocate.
+6. **SneakPlaceMixin**: `PlayerEntity.shouldCancelInteraction()` yarn adı 1.21.x'te
+   doğrulanmalı (mapping değişirse mixin `method` adı güncellenir).

@@ -36,9 +36,9 @@ public class SwarmConfig {
     public int resumeDelayMs = 5000;
 
     // Anti-cheat (Grim) uyumu için Baritone ayarları.
-    public boolean sneakPlace = true;       // huni/smoker koyarken shift basılı
+    public boolean sneakPlace = true;       // sneak-place (Mixin ile; GUI açılmaz)
     public boolean allowAirPlace = false;   // asla boşluğa blok koyma
-    public double maxReach = 4.0;           // insan reach sınırı
+    public double maxReach = 4.5;           // vanilla blok reach; aşma (Grim flag)
     public int placeMinDelayMs = 120;       // bloklar arası min gecikme
     public int placeMaxJitterMs = 180;      // + rastgele jitter (insani ritim)
 

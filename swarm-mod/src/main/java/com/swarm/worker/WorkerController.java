@@ -42,6 +42,12 @@ public class WorkerController {
     private long materialReadySince = 0;  // malzeme yeniden yeterli olduğu an
     private Identifier waitingItem = null;
 
+    // Takılma watchdog: Baritone beklenmedik durursa yeniden başlat.
+    private long lastActiveMs = 0;
+    private int lastPlacedSnapshot = -1;
+    private long lastPlacedChangeMs = 0;
+    private static final long STUCK_TIMEOUT_MS = 15000;
+
     public WorkerController(SwarmConfig cfg, SwarmClient client) {
         this.cfg = cfg;
         this.client = client;
@@ -76,6 +82,7 @@ public class WorkerController {
             SwarmMod.LOGGER.info("[worker] abort alındı");
             BaritoneBridge.stop();
             LitematicaBridge.clearAll();
+            WorkerBuildState.setBuilding(false);
             state = State.IDLE;
         });
     }
@@ -125,21 +132,22 @@ public class WorkerController {
         // atlar (buildIgnoreExisting=false), böylece kaldığı yerden devam eder.
         state = State.BUILDING;
         waitingItem = null;
+        long now = System.currentTimeMillis();
+        lastActiveMs = now;
+        lastPlacedChangeMs = now;
         BaritoneBridge.buildSelectedLitematica();
     }
 
     private void onTick(MinecraftClient mc) {
         if (mc.player == null || mc.world == null) return;
 
-        // İnşa sırasında SNEAK basılı: huni/smoker koyarken arayüz açılmaz.
-        boolean building = (state == State.BUILDING);
-        if (cfg.sneakPlace) {
-            mc.options.sneakKey.setPressed(building);
-        }
+        // Sneak-place: inşa halindeyken Mixin GUI açılmasını engeller (çömelmeden).
+        WorkerBuildState.setBuilding(cfg.sneakPlace && state == State.BUILDING);
 
         if (state == State.BUILDING) {
             checkMaterials(mc);
             maybeSendProgress(mc);
+            watchdog(mc);
             // Baritone iş bitince aktif değildir -> done say.
             if (assignedTotal > 0 && placedCount(mc) >= assignedTotal - 1
                     && !BaritoneBridge.isActive()) {
@@ -147,6 +155,34 @@ public class WorkerController {
             }
         } else if (state == State.WAITING_MATERIAL) {
             handleWaiting(mc);
+        }
+    }
+
+    /**
+     * Takılma kurtarma: ilerleme durduysa ve Baritone da aktif değilse (ama iş
+     * bitmediyse), inşayı yeniden tetikle. "Havayı yumruklayıp öylece kalma"
+     * senaryosunu kırar.
+     */
+    private void watchdog(MinecraftClient mc) {
+        long now = System.currentTimeMillis();
+        int placed = placedCount(mc);
+        if (placed != lastPlacedSnapshot) {
+            lastPlacedSnapshot = placed;
+            lastPlacedChangeMs = now;
+        }
+        boolean active = BaritoneBridge.isActive();
+        if (active) lastActiveMs = now;
+
+        boolean noProgress = (now - lastPlacedChangeMs) > STUCK_TIMEOUT_MS;
+        boolean idleTooLong = (now - lastActiveMs) > STUCK_TIMEOUT_MS;
+        boolean notDone = assignedTotal == 0 || placed < assignedTotal - 1;
+
+        if (noProgress && idleTooLong && notDone) {
+            SwarmMod.LOGGER.warn("[worker] takılma tespit edildi, inşa yeniden başlatılıyor "
+                    + "(placed={}/{})", placed, assignedTotal);
+            lastPlacedChangeMs = now;
+            lastActiveMs = now;
+            BaritoneBridge.buildSelectedLitematica();
         }
     }
 
@@ -159,7 +195,7 @@ public class WorkerController {
                 state = State.WAITING_MATERIAL;
                 materialReadySince = 0;
                 BaritoneBridge.stop();
-                if (cfg.sneakPlace) mc.options.sneakKey.setPressed(false);
+                WorkerBuildState.setBuilding(false);
 
                 JSONObject o = new JSONObject();
                 o.put("item", e.getKey().toString());
@@ -203,8 +239,7 @@ public class WorkerController {
 
     private void markDone() {
         state = State.DONE;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (cfg.sneakPlace) mc.options.sneakKey.setPressed(false);
+        WorkerBuildState.setBuilding(false);
         client.emit(Protocol.WORKER_DONE);
         SwarmMod.LOGGER.info("[worker] segment tamamlandı");
     }

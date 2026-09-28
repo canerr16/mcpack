@@ -1,0 +1,13 @@
+{
+  "role": "worker",
+  "serverUrl": "http://127.0.0.1:8765",
+  "token": "change-me-swarm-token",
+  "workerId": "1",
+  "materialLowThreshold": 8,
+  "resumeDelayMs": 5000,
+  "maxReach": 4.5,
+  "sneakPlace": true,
+  "allowAirPlace": false,
+  "placeMinDelayMs": 120,
+  "placeMaxJitterMs": 180
+}

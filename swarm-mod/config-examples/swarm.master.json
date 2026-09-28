@@ -1,0 +1,9 @@
+{
+  "role": "master",
+  "serverUrl": "http://127.0.0.1:8765",
+  "token": "change-me-swarm-token",
+  "selectionItem": "minecraft:wooden_axe",
+  "maxReach": 4.5,
+  "sneakPlace": true,
+  "allowAirPlace": false
+}

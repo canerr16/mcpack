@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "swarm_mod",
+  "version": "${version}",
+  "name": "Swarm Smelter",
+  "description": "Master-Worker swarm super smelter builder (Baritone + Litematica).",
+  "authors": ["swarm"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.swarm.SwarmMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21",
+    "fabric-api": "*",
+    "litematica": "*",
+    "baritone": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "badges": ["client"]
+    }
+  }
+}
